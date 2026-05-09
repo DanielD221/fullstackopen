@@ -1,6 +1,17 @@
-const Person = ({ person }) => {
+const Person = ({ person, handleDelete }) => {
+  const confirmDelete = () => {
+    if (window.confirm(`Delete ${person.name}?`)) {
+      handleDelete(person.id)
+    }
+  }
+
   return (
-    <p>{person.name} {person.number}</p>
+    <>
+      <p>
+        {person.name} {person.number}
+        <button onClick={confirmDelete}>delete</button>
+      </p>
+    </>
   )
 }
 
