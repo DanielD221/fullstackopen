@@ -1,11 +1,11 @@
 require('dotenv').config()// important to load dotenv before note model is imported
 const express = require('express')
-const morgan = require('morgan')
 const Person = require('./models/person')
+const requestLogger = require('./utils/requestLogger')
 const app = express()
-app.use(express.json())
-app.use(morgan('tiny'))
 app.use(express.static('dist'))
+app.use(express.json())
+app.use(requestLogger)
 
 let persons = [
     { 
@@ -46,7 +46,7 @@ app.get('/info', (request, response) => {
   })
 })
 
-app.get('/api/persons/:id', (request, response) => {
+app.get('/api/persons/:id', (request, response, next) => {
   Person.findById(request.params.id)
     .then(person => {
       if (person) {
@@ -55,20 +55,15 @@ app.get('/api/persons/:id', (request, response) => {
         response.status(404).end()
       }
     })
-    .catch(error => {
-      console.log(error)
-      response.status(400).send({ error: 'malformatted id' })
-    })
+    .catch(error => next(error))
 })
 
-app.delete('/api/persons/:id', (request, response) => {
+app.delete('/api/persons/:id', (request, response, next) => {
   Person.findByIdAndDelete(request.params.id)
     .then(result => {
       response.status(204).end()
     })
-    .catch(error => {
-      response.status(400).send({ error: 'malformatted id' })
-    })
+    .catch(error => next(error))
 })
 
 
@@ -77,7 +72,7 @@ const generateId = () => {
   return Math.floor(Math.random() * 1000000).toString()
 }
 
-app.post('/api/persons', (request, response) => {
+app.post('/api/persons', (request, response, next) => {
   const body = request.body
   console.log('POST /api/persons request body:', body)
 
@@ -102,14 +97,47 @@ app.post('/api/persons', (request, response) => {
 
     person.save().then(savedPerson => {
       response.json(savedPerson)
-    }).catch(error => {
-      response.status(400).json({ error: error.message })
-    })
-  }).catch(error => {
-    response.status(400).json({ error: error.message })
-  })
+    }).catch(error => next(error))
+  }).catch(error => next(error))
 })
 
+app.put('/api/notes/:id', (request, response, next) => {
+  const { content, important } = request.body
+
+  Note.findById(request.params.id)
+    .then(note => {
+      if (!note) {
+        return response.status(404).end()
+      }
+
+      note.content = content
+      note.important = important
+
+      return note.save().then((updatedNote) => {
+        response.json(updatedNote)
+      })
+    })
+    .catch(error => next(error))
+})
+
+const unknownEndpoint = (request, response) => {
+  response.status(404).send({ error: 'unknown endpoint' })
+}
+
+// handler of requests with unknown endpoint
+app.use(unknownEndpoint)
+
+const errorHandler = (error, request, response, next) => {
+  console.error(error.message)
+
+  if (error.name === 'CastError') {
+    return response.status(400).send({ error: 'malformatted id' })
+  } 
+
+  next(error)
+}
+
+app.use(errorHandler)
 
 const PORT = process.env.PORT || 3001
 app.listen(PORT, () => {
