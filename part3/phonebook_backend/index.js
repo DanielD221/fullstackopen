@@ -101,20 +101,20 @@ app.post('/api/persons', (request, response, next) => {
   }).catch(error => next(error))
 })
 
-app.put('/api/notes/:id', (request, response, next) => {
-  const { content, important } = request.body
+app.put('/api/persons/:id', (request, response, next) => {
+  const { name, number } = request.body
 
-  Note.findById(request.params.id)
-    .then(note => {
-      if (!note) {
+  Person.findById(request.params.id)
+    .then(person => {
+      if (!person) {
         return response.status(404).end()
       }
 
-      note.content = content
-      note.important = important
+      person.name = name
+      person.number = number
 
-      return note.save().then((updatedNote) => {
-        response.json(updatedNote)
+      return person.save().then((updatedPerson) => {
+        response.json(updatedPerson)
       })
     })
     .catch(error => next(error))
