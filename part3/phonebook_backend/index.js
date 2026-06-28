@@ -7,29 +7,6 @@ app.use(express.static('dist'))
 app.use(express.json())
 app.use(requestLogger)
 
-let persons = [
-    { 
-      "id": "1",
-      "name": "Arto Hellas", 
-      "number": "040-123456"
-    },
-    { 
-      "id": "2",
-      "name": "Ada Lovelace", 
-      "number": "39-44-5323523"
-    },
-    { 
-      "id": "3",
-      "name": "Dan Abramov", 
-      "number": "12-43-234345"
-    },
-    { 
-      "id": "4",
-      "name": "Mary Poppendieck", 
-      "number": "39-23-6423122"
-    }
-]
-
 
 
 
@@ -60,32 +37,26 @@ app.get('/api/persons/:id', (request, response, next) => {
 
 app.delete('/api/persons/:id', (request, response, next) => {
   Person.findByIdAndDelete(request.params.id)
-    .then(result => {
+    .then(() => {
       response.status(204).end()
     })
     .catch(error => next(error))
 })
-
-
-
-const generateId = () => {
-  return Math.floor(Math.random() * 1000000).toString()
-}
 
 app.post('/api/persons', (request, response, next) => {
   const body = request.body
   console.log('POST /api/persons request body:', body)
 
   if (!body.name || !body.number) {
-    return response.status(400).json({ 
-      error: 'name or number missing' 
+    return response.status(400).json({
+      error: 'name or number missing'
     })
   }
 
   Person.findOne({ name: body.name }).then(existingPerson => {
     if (existingPerson) {
-      response.status(400).json({ 
-        error: 'name must be unique' 
+      response.status(400).json({
+        error: 'name must be unique'
       })
       return
     }
@@ -132,7 +103,7 @@ const errorHandler = (error, request, response, next) => {
 
   if (error.name === 'CastError') {
     return response.status(400).send({ error: 'malformatted id' })
-  } 
+  }
 
   next(error)
 }
